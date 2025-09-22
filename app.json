@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "DevConnect",
+    "slug": "DevConnect",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "src/assets/images/icon.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "scheme": "devconnect",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "src/assets/images/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      }
+    },
+    "web": {
+      "favicon": "src/assets/images/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-asset",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#ffffff",
+          "image": "src/assets/images/splash-icon.png"
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "3eb732be-32e9-4c20-8124-902bbd178313"
+      }
+    }
+  }
+}
