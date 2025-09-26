@@ -7,7 +7,6 @@ import {
   Button,
   useTheme as usePaperTheme,
   ActivityIndicator,
-  Snackbar,
 } from "react-native-paper";
 import {
   signupSchema,
@@ -26,6 +25,8 @@ import { useNavigation } from "@react-navigation/native";
 import useAuth from "@/store/auth.store";
 import * as SecureStore from "expo-secure-store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { AxiosError } from "axios";
+import mapErrToSnackbar from "@/utils/mapErrorToSnackbar";
 
 export type SignupFlowProps = {
   onSubmit?: (data: SignupForm) => void;
@@ -34,8 +35,11 @@ export type SignupFlowProps = {
 type SignupNav = NativeStackNavigationProp<RootStackParamList, "Signup">;
 
 export default function SignupFlowControlled() {
+  const t = usePaperTheme(); // <-- add
+
   const [step, setStep] = useState<1 | 2>(1);
   const [submitting, setSubmitting] = useState(false);
+
   // Full form state
   const [username, setUsername] = useState("");
   const [name, setName] = useState("");
@@ -51,11 +55,12 @@ export default function SignupFlowControlled() {
   const [interestTemp, setInterestTemp] = useState("");
   const [linkTemp, setLinkTemp] = useState("");
 
-  // error state
-  const [errors, setErrors] = useState<
-    Partial<Record<keyof SignupForm, string>>
-  >({});
+  // field validation errors
+  const [errors, setErrors] = useState<Partial<Record<keyof SignupForm, string>>>({});
 
+  // http error -> snackbar
+  const [httpErr, setHttpErr] = useState<AxiosError | null>(null); // <-- add
+  const [showErr, setShowErr] = useState(false); // <-- add
 
   const navigation = useNavigation<SignupNav>();
   const setAccessToken = useAuth((state) => state.setAccessToken);
@@ -87,8 +92,6 @@ export default function SignupFlowControlled() {
       setErrors({});
       setStep(2);
     } catch (err) {
-      console.error("Error validating step1: ", err);
-
       if (err instanceof z.ZodError) {
         const newErrors = err.issues.reduce(
           (acc, issue) => {
@@ -98,14 +101,19 @@ export default function SignupFlowControlled() {
           },
           {} as Partial<Record<keyof SignupForm, string>>
         );
-
         setErrors(newErrors);
+      } else {
+        // if something else went wrong, surface a snackbar
+        setHttpErr(err as any);
+        setShowErr(true);
       }
     }
   };
 
   const onCreate = async () => {
     setSubmitting(true);
+    setHttpErr(null);        // <-- add
+    setShowErr(false);       // <-- add
     try {
       // validate all
       const payload: SignupForm = {
@@ -121,26 +129,28 @@ export default function SignupFlowControlled() {
 
       signupSchema.parse(payload);
       setErrors({});
+
       const authService = new AuthService(ApiClient.getInstance());
       const res = await authService.signup({ ...payload });
-      const accessToken = res.data.payload?.accessToken;
-      const user = res.data.payload?.user;
-      const refreshToken = res.data.payload?.refreshToken;
-      const expiresIn = res.data.payload?.expiresIn;
-      //change global auth state
-      setAccessToken(accessToken!);
-      setAuthEmail(user!.email!);
-      setAuthUsername(user!.username);
-      setUserId(user?.user_id!);
-      setRoles(user?.user_roles!);
-      setAuthName(user?.name!);
 
-      //save the refresh token
-      await SecureStore.setItemAsync("refreshToken", refreshToken!);
+      const accessToken = res.data.payload?.accessToken!;
+      const user = res.data.payload?.user!;
+      const refreshToken = res.data.payload?.refreshToken!;
+      const expiresIn = res.data.payload?.expiresIn!;
 
-      //save expiresIn
-      await AsyncStorage.setItem("expiresIn", String(expiresIn!));
-      //TODO: when home tabs are created, move to hometabs instead
+      // change global auth state
+      setAccessToken(accessToken);
+      setAuthEmail(user.email!);
+      setAuthUsername(user.username);
+      setUserId(user.user_id!);
+      setRoles(user.user_roles!);
+      setAuthName(user.name!);
+
+      // persist tokens
+      await SecureStore.setItemAsync("refreshToken", refreshToken);
+      await AsyncStorage.setItem("expiresIn", String(expiresIn));
+
+      // TODO: when home tabs exist, navigate there instead
       navigation.navigate("Login");
     } catch (err: any) {
       if (err instanceof z.ZodError) {
@@ -152,11 +162,12 @@ export default function SignupFlowControlled() {
           },
           {} as Partial<Record<keyof SignupForm, string>>
         );
-
         setErrors(newErrors);
+      } else {
+        // axios or unknown -> snackbar
+        setHttpErr(err);
+        setShowErr(true);
       }
-      //later to be replaced with a custom toast
-      console.error("Error signing up: ", err.stack);
     } finally {
       setSubmitting(false);
     }
@@ -181,16 +192,10 @@ export default function SignupFlowControlled() {
         keyboardShouldPersistTaps="handled"
       >
         <View className="flex-1 items-center justify-center px-[20] py-[24]">
-          <PaperText
-            variant="headlineSmall"
-            className="text-onSurface text-center mb-[6]"
-          >
+          <PaperText variant="headlineSmall" className="text-onSurface text-center mb-[6]">
             Create your account
           </PaperText>
-          <PaperText
-            variant="bodyMedium"
-            className="text-onSurface/70 text-center mb-[16]"
-          >
+          <PaperText variant="bodyMedium" className="text-onSurface/70 text-center mb-[16]">
             Join DevConnect in two quick steps
           </PaperText>
 
@@ -269,18 +274,25 @@ export default function SignupFlowControlled() {
               </View>
             </Card.Content>
           </Card>
+
           <View className="flex-row items-center mt-[14]">
             <PaperText variant="bodyMedium" className="text-onSurface/70">
               Already have an account?
             </PaperText>
-            <Button compact className="ml-[2]" mode="text"
-            onPress={() => navigation.navigate("Login")}>
+            <Button
+              compact
+              className="ml-[2]"
+              mode="text"
+              onPress={() => navigation.navigate("Login")}
+            >
               Sign In
             </Button>
           </View>
         </View>
       </KeyboardAwareScrollView>
-      
+
+      {/* Axios -> Snackbar */}
+      {mapErrToSnackbar(t, httpErr, showErr, () => setShowErr(false))}
     </SafeAreaView>
   );
 }

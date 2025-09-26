@@ -17,11 +17,23 @@
       "userInterfaceStyle": "automatic"
     },
     "android": {
+      "package": "com.devconnect.app",
       "backgroundColor": "#0b0f14",
-      "navigationBar": {
-        "backgroundColor": "#0b0f14",
-        "barStyle": "light-content"
-      },
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "devconnect-expo.web.app",
+              "pathPrefix": "/reset"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ],
+     
       "userInterfaceStyle": "automatic",
       "adaptiveIcon": {
         "foregroundImage": "src/assets/images/adaptive-icon.png",

@@ -1,4 +1,6 @@
+import Forgot from "@/screens/auth/Forgot";
 import Login from "@/screens/auth/Login";
+import ResetPasswordScreen from "@/screens/auth/Reset";
 import Signup from "@/screens/auth/Signup/SignupFlow";
 import IntroSlides from "@/screens/IntroSlides";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
@@ -9,6 +11,8 @@ export type RootStackParamList = {
   IntroSlides: undefined;
   Login: undefined;
   Signup: undefined;
+  Forgot: undefined;
+  Reset: {token: string};
 };
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -41,6 +45,8 @@ export default function RootStackNavigator() {
       <Stack.Screen name="IntroSlides" component={IntroSlides} />
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Signup" component={Signup} />
+      <Stack.Screen name="Forgot" component={Forgot}/>
+      <Stack.Screen name="Reset" component={ResetPasswordScreen}/>
     </Stack.Navigator>
   );
 }

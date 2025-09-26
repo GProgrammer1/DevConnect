@@ -1,7 +1,6 @@
 import "react-native-gesture-handler";
 import "./styles/nativewind-paper-wrapper";
-import { View, useColorScheme } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useColorScheme } from "react-native";
 import "./global.css";
 import {
   adaptNavigationTheme,
@@ -33,6 +32,8 @@ import RootStackNavigator, {
 } from "./navigation/RootNavigator";
 import { interFonts } from "./constants/Fonts";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import linking from "./navigation/Linking";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 SplashScreen.preventAutoHideAsync();
 const { LightTheme, DarkTheme } = adaptNavigationTheme({
   reactNavigationLight: NavLight,
@@ -87,13 +88,18 @@ export default function App() {
     <PaperProvider
       theme={theme === "light" ? DevConnectLightTheme : DevConnectDarkTheme}
     >
-      <ThemeBridge>
-        <NavigationContainer theme={paperTheme.dark ? DarkTheme : LightTheme}>
-          <StatusBarBlock />
+      <SafeAreaProvider>
+        <ThemeBridge>
+          <NavigationContainer
+            theme={paperTheme.dark ? DarkTheme : LightTheme}
+            linking={linking}
+          >
+            <StatusBarBlock />
 
-          <RootStackNavigator />
-        </NavigationContainer>
-      </ThemeBridge>
+            <RootStackNavigator />
+          </NavigationContainer>
+        </ThemeBridge>
+      </SafeAreaProvider>
     </PaperProvider>
   );
 }

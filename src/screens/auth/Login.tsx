@@ -11,12 +11,14 @@ import {
   useTheme as usePaperTheme,
 } from "react-native-paper";
 import { RootStackParamList } from "@/navigation/RootNavigator";
-import { loginSchema, LoginSchema } from "@/types/schemas/auth/LoginSchema";
+import { loginSchema } from "@/types/schemas/auth/LoginSchema";
 import { AuthService } from "@/services/auth.service";
 import { ApiClient } from "@/api/ApiClient";
 import useAuth from "@/store/auth.store";
 import * as SecureStore from "expo-secure-store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { AxiosError } from "axios";
+import mapErrToSnackbar from "@/utils/mapErrorToSnackbar";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Login">;
 
@@ -27,62 +29,72 @@ export default function LoginScreen({ navigation }: Props) {
   const [pw, setPw] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-
+  const [error, setError] = useState<AxiosError | null>(null);
+  const [showErr, setShowErr] = useState(false);
   const disabled = useMemo(
     () => !email.trim() || pw.length < 8 || loading,
     [email, pw, loading]
   );
-  const setAccessToken = useAuth((state) => state.setAccessToken);
-  const setAuthEmail = useAuth((state) => state.setEmail);
-  const setUserId = useAuth((state) => state.setUserId);
-  const setAuthUsername = useAuth((state) => state.setUsername);
-  const setRoles = useAuth((state) => state.setRoles);
-  const setAuthName = useAuth((state) => state.setName);
+
+  const setAccessToken = useAuth((s) => s.setAccessToken);
+  const setAuthEmail = useAuth((s) => s.setEmail);
+  const setUserId = useAuth((s) => s.setUserId);
+  const setAuthUsername = useAuth((s) => s.setUsername);
+  const setRoles = useAuth((s) => s.setRoles);
+  const setAuthName = useAuth((s) => s.setName);
 
   async function onLogin() {
+    setLoading(true);
+    setError(null);
+
     try {
-      setLoading(true);
-      setErr(null);
-      const loginPayload: LoginSchema = {
-        email,
+      // validate input early
+      const parsed = loginSchema.parse({
+        email: email.trim(),
         password: pw,
-      };
+      });
 
-      const result = loginSchema.parse(loginPayload);
-      console.log("Result: ",result);
-      
       const authService = new AuthService(ApiClient.getInstance());
-      const res = await authService.login(result);
-      console.log("Res data", res);
-      
-      const accessToken = res.data.payload?.accessToken;
-      const user = res.data.payload?.user;
-      const refreshToken = res.data.payload?.refreshToken;
-      const expiresIn = res.data.payload?.expiresIn;
-      //change global auth state
-      setAccessToken(accessToken!);
-      setAuthEmail(user!.email!);
-      setAuthUsername(user!.username);
-      setUserId(user?.user_id!);
-      setRoles(user?.user_roles!);
-      setAuthName(user?.name!);
+      const res = await authService.login(parsed);
 
-      //save the refresh token
-      await SecureStore.setItemAsync("refreshToken", refreshToken!);
+      const payload = res?.data?.payload;
+      const accessToken = payload?.accessToken ?? "";
+      const refreshToken = payload?.refreshToken ?? "";
+      const expiresIn = payload?.expiresIn ?? 0;
+      const user = payload?.user;
 
-      //save expiresIn
-      await AsyncStorage.setItem("expiresIn", String(expiresIn!));
+      if (!accessToken || !refreshToken || !user) {
+        throw new Error("Malformed response from server");
+      }
+
+      // set global auth state
+      setAccessToken(accessToken);
+      setAuthEmail(user.email ?? "");
+      setAuthUsername(user.username ?? "");
+      setUserId(user.user_id ?? "");
+      setRoles(user.user_roles ?? []);
+      setAuthName(user.name ?? "");
+
+      // persist tokens/expiry in parallel
+      await Promise.all([
+        SecureStore.setItemAsync("refreshToken", refreshToken),
+        AsyncStorage.setItem("expiresIn", String(expiresIn)),
+      ]);
+
+      // go to your next screen (adjust if needed)
       navigation.replace("Signup");
-    } catch (e: any) {
-      setErr(e.message || "Login failed");
+    } catch (e: unknown) {
+      if (e instanceof AxiosError) {
+        setError(e);
+        setShowErr(true);
+      }
     } finally {
       setLoading(false);
     }
   }
 
   const goSignup = () => navigation.navigate("Signup");
-  //   const goForgot = () => navigation.navigate("ResetPassword", { token: "" });
+  const goForgot = () => navigation.navigate("Forgot");
 
   return (
     <KeyboardAvoidingView
@@ -157,11 +169,7 @@ export default function LoginScreen({ navigation }: Props) {
               />
 
               {/* Error */}
-              {err ? (
-                <HelperText type="error" className="mt-[6]">
-                  {err}
-                </HelperText>
-              ) : null}
+              
 
               {/* Login button */}
               <Button
@@ -174,7 +182,7 @@ export default function LoginScreen({ navigation }: Props) {
               </Button>
 
               {/* Forgot */}
-              <Button compact className="self-end mt-[10]">
+              <Button compact className="self-end mt-[10]" onPress={goForgot}>
                 Forgot password?
               </Button>
 
@@ -220,6 +228,8 @@ export default function LoginScreen({ navigation }: Props) {
           </View>
         </View>
       </ScrollView>
+      {mapErrToSnackbar(t, error, showErr, () => setShowErr(false))}
+
     </KeyboardAvoidingView>
   );
 }
