@@ -2,6 +2,9 @@
   "expo": {
     "name": "DevConnect",
     "slug": "DevConnect",
+    "splash": {
+      "backgroundColor": "#0b0f14"
+    },
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "src/assets/images/icon.png",
@@ -9,9 +12,17 @@
     "newArchEnabled": true,
     "scheme": "devconnect",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "backgroundColor": "#0b0f14",
+      "userInterfaceStyle": "automatic"
     },
     "android": {
+      "backgroundColor": "#0b0f14",
+      "navigationBar": {
+        "backgroundColor": "#0b0f14",
+        "barStyle": "light-content"
+      },
+      "userInterfaceStyle": "automatic",
       "adaptiveIcon": {
         "foregroundImage": "src/assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -19,7 +30,9 @@
     },
     "web": {
       "favicon": "src/assets/images/favicon.png",
-      "bundler": "metro"
+      "bundler": "metro",
+      "backgroundColor": "#0b0f14",
+      "themeColor": "#0b0f14"
     },
     "plugins": [
       "expo-asset",
@@ -29,7 +42,8 @@
           "backgroundColor": "#ffffff",
           "image": "src/assets/images/splash-icon.png"
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "extra": {
       "eas": {

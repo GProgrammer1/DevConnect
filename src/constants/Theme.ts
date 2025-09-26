@@ -1,22 +1,29 @@
-import { configureFonts, MD3DarkTheme, MD3LightTheme, MD3Theme } from "react-native-paper";
+// constants/Theme.ts
+import { MD3DarkTheme, MD3LightTheme, MD3Theme } from "react-native-paper";
 import { BRAND, colorsDark, colorsLight } from "./Colors";
 import { interFonts } from "./Fonts";
+
+/**
+ * Paper themes that use your old style tokens.
+ * ThemeBridge will pick these up and push CSS vars to NativeWind,
+ * so your Tailwind usage remains unchanged.
+ */
 
 export const DevConnectDarkTheme: MD3Theme = {
   ...MD3DarkTheme,
   dark: true,
-  roundness: 16,
   isV3: true,
+  roundness: 12,
   colors: colorsDark,
   fonts: interFonts,
-  // custom (safe to add—Paper ignores unknown keys but you can read them)
+  // safe custom block you can read elsewhere
   custom: {
-    border: BRAND.border,
-    focusRing: BRAND.focusRing,
-    gradient: BRAND.gradient,
+    border: BRAND.borderDark,
+    focusRing: BRAND.focusRingDark,
+    gradient: { start: BRAND.gradStart, end: BRAND.gradEnd },
     surfaces: {
-      toolbar: BRAND.surfaceToolbarDark,
-      card: BRAND.surfaceCardDark,
+      toolbar: BRAND.surface1Dark, // optional
+      card: BRAND.surface2Dark,    // optional
     },
     semantic: {
       success: BRAND.success,
@@ -37,17 +44,17 @@ export const DevConnectDarkTheme: MD3Theme = {
 export const DevConnectLightTheme: MD3Theme = {
   ...MD3LightTheme,
   dark: false,
-  roundness: 16,
   isV3: true,
+  roundness: 12,
   colors: colorsLight,
   fonts: interFonts,
   custom: {
-    border: "rgba(15,22,35,0.15)",
-    focusRing: BRAND.focusRing,
-    gradient: BRAND.gradient,
+    border: BRAND.borderLight,
+    focusRing: BRAND.focusRingLight,
+    gradient: { start: BRAND.gradStart, end: BRAND.gradEnd },
     surfaces: {
-      toolbar: "#f1f5f9",
-      card: "#ffffff",
+      toolbar: BRAND.surface2Light, // optional
+      card: BRAND.surface1Light,    // optional
     },
     semantic: {
       success: BRAND.success,

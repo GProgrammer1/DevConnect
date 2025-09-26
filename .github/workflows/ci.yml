@@ -1,10 +1,10 @@
-name: NodeJS with Grunt
+name: Node.js CI
 
 on:
   push:
-    branches: [ "main", "dev" ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ "main", "dev" ]
+    branches: [ "main" ]
 
 jobs:
   build:
@@ -15,14 +15,29 @@ jobs:
         node-version: [18.x, 20.x, 22.x]
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout
+      uses: actions/checkout@v4
 
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
 
-    - name: Build
-      run: |
-        npm ci
-        grunt
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v3
+      with:
+        version: 10  # or whichever version you use
+
+    - name: Cache pnpm store
+      uses: actions/cache@v4
+      with:
+        path: ~/.pnpm-store
+        key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-pnpm-
+
+    - name: Install dependencies
+      run: pnpm install --frozen-lockfile
+
+    # - name: Run Jest tests
+    #   run: pnpm test -- --coverage
